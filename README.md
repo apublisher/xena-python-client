@@ -31,24 +31,34 @@ This repository contains 19 Python packages for working with the Xena API:
 
 ## 🚀 Quick Start
 
-### Installation
+### Installation (For Your Projects)
 
-Install the unified client (includes all domains) from GitHub:
+**Option 1: Install unified client (easy, includes all domains)**
+
 ```bash
+# In your project directory
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install unified client with all domains
 pip install git+https://github.com/apublisher/xena-python-client.git#subdirectory=xena/xena-client
 ```
 
-Or install only the packages you need:
+**Option 2: Install only specific packages (if you only need a few)**
+
 ```bash
-# Individual packages
+# Install individual packages
 pip install git+https://github.com/apublisher/xena-python-client.git#subdirectory=xena/xena-partner
 pip install git+https://github.com/apublisher/xena-python-client.git#subdirectory=xena/xena-order
-pip install git+https://github.com/apublisher/xena-python-client.git#subdirectory=xena/xena-finance
 ```
 
-**Note:** This is a private repository. For authentication:
-- Use SSH: Set up your SSH key with GitHub
-- Use token: `pip install git+https://<token>@github.com/apublisher/xena-python-client.git#subdirectory=xena/xena-client`
+**Requirements:** Git must be installed on your system for pip to download from GitHub.
+
+**Authentication (Private Repository):**
+- **SSH:** Set up your SSH key with GitHub (recommended)
+- **Token:** `pip install git+https://<token>@github.com/apublisher/xena-python-client.git#subdirectory=xena/xena-client`
+
+**Note:** This copies the packages into your virtual environment. No need to keep the repository around.
 
 ### Configuration
 
@@ -61,6 +71,8 @@ Create a `config.json` file:
 ```
 
 ### Usage
+
+**With unified client:**
 
 ```python
 from xena_client import XenaClient
@@ -79,6 +91,31 @@ for partner in partners['Entities']:
     print(f"- {partner['Name']}")
 ```
 
+**With individual packages:**
+
+```python
+from xena_partner import PartnerApi
+import requests
+import json
+
+# Load config
+with open('config.json') as f:
+    config = json.load(f)
+
+# Create authenticated session
+session = requests.Session()
+session.headers['XenaAPIKey'] = config['api_key']
+
+# Use the API
+partner_api = PartnerApi(base_url="https://my.xena.biz", session=session)
+partners = partner_api.api_partner__get_get__api__fiscal_fiscal_id__partner(
+    fiscal_id=config['fiscal_id'],
+    list_options_page_size=10
+)
+
+print(f"Found {partners['Count']} partners")
+```
+
 ## 📖 Features
 
 - ✅ **Modular Design** - Install only the packages you need
@@ -90,7 +127,9 @@ for partner in partners['Entities']:
 
 ## 🔧 Development
 
-### Setup
+### Modifying the Packages (Editable Mode)
+
+Use this setup **only** when you want to modify the xena-python-client package code itself:
 
 ```bash
 # Clone the repository
@@ -101,10 +140,22 @@ cd xena-python-client/xena
 python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
-# Install all packages in editable mode
+# Install packages in editable mode (-e flag)
 pip install -e xena-client -e xena-partner -e xena-order
 # ... (install other packages as needed)
 ```
+
+**What is `-e` (editable mode)?**
+- Creates a **link** to your source code (doesn't copy files)
+- Changes to the package code are immediately active
+- **Do NOT delete** the repository - packages need it!
+- Use this when working on the package code itself, not when using packages in other projects
+
+**Workflow:**
+1. Make changes to the package code
+2. Test immediately (no reinstall needed)
+3. Commit and push to GitHub
+4. Other projects get updates with `pip install --upgrade git+...`
 
 ### Testing
 
