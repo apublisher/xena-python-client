@@ -33,15 +33,22 @@ This repository contains 19 Python packages for working with the Xena API:
 
 ### Installation
 
-Install the unified client (includes all domains):
+Install the unified client (includes all domains) from GitHub:
 ```bash
-pip install xena-client
+pip install git+https://github.com/apublisher/xena-python-client.git#subdirectory=xena/xena-client
 ```
 
 Or install only the packages you need:
 ```bash
-pip install xena-partner xena-order xena-finance
+# Individual packages
+pip install git+https://github.com/apublisher/xena-python-client.git#subdirectory=xena/xena-partner
+pip install git+https://github.com/apublisher/xena-python-client.git#subdirectory=xena/xena-order
+pip install git+https://github.com/apublisher/xena-python-client.git#subdirectory=xena/xena-finance
 ```
+
+**Note:** This is a private repository. For authentication:
+- Use SSH: Set up your SSH key with GitHub
+- Use token: `pip install git+https://<token>@github.com/apublisher/xena-python-client.git#subdirectory=xena/xena-client`
 
 ### Configuration
 
@@ -87,8 +94,8 @@ for partner in partners['Entities']:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/xena-python-client.git
-cd xena-python-client
+git clone https://github.com/apublisher/xena-python-client.git
+cd xena-python-client/xena
 
 # Create virtual environment
 python -m venv .venv
