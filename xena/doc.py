@@ -3,14 +3,14 @@
 Xena API Documentation Explorer
 
 Usage:
-    python doc.py                           # List all available packages
-    python doc.py partner                   # List all methods in partner package
-    python doc.py partner get               # Show details for partner GET method
+    python doc.py                           # List all available modules
+    python doc.py [module]                  # List all methods in a module (example: partner)
+    python doc.py [module] [method]         # Show details for a method (example: get)
     python doc.py --url <url>               # Parse and show docs for a specific URL
     python doc.py --refresh                 # Force refresh swagger cache
 
 Examples:
-    python doc.py --url "https://my.xena.biz/Api/Fiscal/103145/Partner/123"
+    python doc.py --url "https://my.xena.biz/Api/Fiscal/<fiscalId>/Partner/<partnerId>"
 """
 
 import json
