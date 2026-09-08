@@ -2,6 +2,9 @@
 
 ## 0.2.0 — 2026-09-09
 
+- Add existing OAuth bearer-token support to XenaClient through access_token and set_access_token. Refresh tokens are optional at the application level; this client never refreshes or replays rejected requests automatically.
+- Preserve API-key authentication, reject ambiguous credentials and document original-byte downloads through the shared authenticated session.
+
 - Update xena-client, xena-order, xena-finance and xena-subscription to 0.2.0. Other domain packages remain at 0.1.0.
 - Add six OrderTaskBudgetPost operations, OrderTaskLine/DeleteLines and ResourcePost/Totals to xena-order.
 - Add PaymentExportDraft/{contextId}/ByPaymentIds to xena-finance.

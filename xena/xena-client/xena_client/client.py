@@ -4,6 +4,7 @@ import json
 import requests
 from pathlib import Path
 from typing import Optional
+from .auth import BearerTokenAuth
 
 # Import all API packages
 from xena_accountant import AccountantApi
@@ -43,7 +44,7 @@ class XenaClient:
     BASE_URL = "https://my.xena.biz"
     
     def __init__(self, config_path: Optional[str] = None, api_key: Optional[str] = None, 
-                 fiscal_id: Optional[str] = None) -> None:
+                 fiscal_id: Optional[str] = None, *, access_token: Optional[str] = None) -> None:
         """
         Initialize Xena Client.
         
@@ -51,26 +52,36 @@ class XenaClient:
             config_path: Path to config.json (default: looks in current directory)
             api_key: API key (overrides config file)
             fiscal_id: Fiscal ID (overrides config file)
+            access_token: Existing OAuth access token, without the Bearer prefix.
+                Mutually exclusive with api_key. No automatic login or refresh.
         """
         # Load config if not provided via parameters
-        if api_key is None or fiscal_id is None:
+        if config_path is not None or (access_token is None and (api_key is None or fiscal_id is None)):
             config = self._load_config(config_path)
-            api_key = api_key or config.get('api_key', '')
-            fiscal_id = fiscal_id or config.get('fiscal_id', '')
+            if api_key is None and access_token is None:
+                api_key = config.get('api_key') or None
+                access_token = config.get('access_token') or None
+            if fiscal_id is None:
+                fiscal_id = config.get('fiscal_id', '')
         
-        if not api_key:
-            raise ValueError("API key is required. Provide via parameter or config.json")
+        if api_key is not None and access_token is not None:
+            raise ValueError("Provide either api_key or access_token, not both")
+        if not api_key and access_token is None:
+            raise ValueError("API key or OAuth access token is required. Provide via parameter or config.json")
         
         self.api_key = api_key
-        self.fiscal_id = fiscal_id
+        self.fiscal_id = fiscal_id if fiscal_id is not None else ''
         
         # Create authenticated session
         self.session = requests.Session()
         self.session.headers.update({
-            'XenaAPIKey': api_key,
             'Content-Type': 'application/json',
             'Accept': 'application/json'
         })
+        if access_token is not None:
+            self.set_access_token(access_token)
+        else:
+            self.session.headers['XenaAPIKey'] = api_key
         
         # Initialize all API clients (lazy loading)
         self._accountant = None
@@ -92,6 +103,19 @@ class XenaClient:
         self._scheduling = None
         self._subscription = None
     
+    def set_access_token(self, access_token: str) -> None:
+        """Use a new access token on all domain clients, including existing ones.
+
+        Call after a new login or an external refresh. Tokens are never persisted.
+        A rejected/expired token raises the normal requests.HTTPError on an API
+        call; requests are not automatically retried or switched to API-key auth.
+        """
+        auth = BearerTokenAuth(access_token)
+        self.session.headers.pop('XenaAPIKey', None)
+        self.session.headers.pop('Authorization', None)
+        self.session.auth = auth
+        self.api_key = None
+
     def _load_config(self, config_path: Optional[str] = None) -> dict:
         """Load configuration from config.json."""
         if config_path:
