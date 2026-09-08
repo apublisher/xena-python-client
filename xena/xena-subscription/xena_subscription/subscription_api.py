@@ -27,7 +27,7 @@ class SubscriptionApi:
         except ValueError:
             return response.text
 
-    def api_subscription__get_get__api__fiscal_fiscal_id__subscription(self, fiscal_id: str, query_string: str = None, list_options_show_deactivated: bool = None, list_options_page: int = None, list_options_page_size: int = None, list_options_force_no_paging: bool = None, **kwargs) -> Any:
+    def api_subscription__get_get__api__fiscal_fiscal_id__subscription(self, fiscal_id: str, query_string: str = None, list_options_show_deactivated: bool = None, list_options_page: int = None, list_options_page_size: int = None, list_options_force_no_paging: bool = None, is_active: Optional[bool] = None, **kwargs) -> Any:
         """Auto-generated method for GET /Api/Fiscal/{fiscalId}/Subscription"""
         url = f"{self.base_url}/Api/Fiscal/{fiscal_id}/Subscription"
         params: Dict[str, Any] = {}
@@ -41,6 +41,8 @@ class SubscriptionApi:
             params['listOptions.pageSize'] = list_options_page_size
         if list_options_force_no_paging is not None:
             params['listOptions.forceNoPaging'] = list_options_force_no_paging
+        if is_active is not None:
+            params['isActive'] = is_active
         headers: Dict[str, Any] = {}
         response = self.session.get(url, params=params, headers=headers, **kwargs)
         response.raise_for_status()

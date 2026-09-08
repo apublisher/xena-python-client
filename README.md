@@ -2,6 +2,35 @@
 
 Python client libraries for the Xena accounting system API. Provides easy access to all Xena API domains through standalone packages.
 
+## API update 0.2.0
+
+`xena-client`, `xena-order`, `xena-finance`, and `xena-subscription` are version
+0.2.0. Other domain packages remain at 0.1.0. See [CHANGELOG.md](CHANGELOG.md)
+for the nine added operations and two optional filters.
+
+To install or upgrade all packages together from a checkout in PowerShell:
+
+```powershell
+# Run from the repository root, in your application's Python environment.
+$packages = @(Get-ChildItem ./xena -Directory -Filter 'xena-*' | ForEach-Object { $_.FullName })
+python -m pip install --upgrade $packages
+```
+
+Passing all local packages together lets pip resolve the domain dependencies
+without requiring them to be published on PyPI. The wrapper itself does not
+need an update to keep using its existing methods.
+
+The source Swagger snapshot is committed under `specs/`. Run offline contract
+tests (requires `requests`) from the repository root:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+These tests verify endpoint coverage and request construction, not live Xena
+behavior. `Document/Inbox.query_string` remains supported for compatibility,
+although it is absent from the current Swagger snapshot.
+
 ## 📦 Packages
 
 This repository contains 19 Python packages for working with the Xena API:
