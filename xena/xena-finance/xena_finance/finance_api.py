@@ -1777,7 +1777,7 @@ class FinanceApi:
         except ValueError:
             return response.text
 
-    def api_ledger_account__get_list_get__api__fiscal_fiscal_id__ledger_account(self, fiscal_id: str, ledger_account: str = None, query_string: str = None, include_default: bool = None, exclude_vats: bool = None, exclude_article_groups: bool = None, exclude_ledger_tags: bool = None, exclude_system_accounts: bool = None, list_options_show_deactivated: bool = None, list_options_page: int = None, list_options_page_size: int = None, list_options_force_no_paging: bool = None, **kwargs) -> Any:
+    def api_ledger_account__get_list_get__api__fiscal_fiscal_id__ledger_account(self, fiscal_id: str, ledger_account: str = None, query_string: str = None, include_default: bool = None, exclude_vats: bool = None, exclude_article_groups: bool = None, exclude_ledger_tags: bool = None, exclude_system_accounts: bool = None, list_options_show_deactivated: bool = None, list_options_page: int = None, list_options_page_size: int = None, list_options_force_no_paging: bool = None, exclude_article_groups_without_number: Optional[bool] = None, **kwargs) -> Any:
         """Auto-generated method for GET /Api/Fiscal/{fiscalId}/LedgerAccount"""
         url = f"{self.base_url}/Api/Fiscal/{fiscal_id}/LedgerAccount"
         params: Dict[str, Any] = {}
@@ -1803,6 +1803,8 @@ class FinanceApi:
             params['listOptions.pageSize'] = list_options_page_size
         if list_options_force_no_paging is not None:
             params['listOptions.forceNoPaging'] = list_options_force_no_paging
+        if exclude_article_groups_without_number is not None:
+            params['excludeArticleGroupsWithoutNumber'] = exclude_article_groups_without_number
         headers: Dict[str, Any] = {}
         response = self.session.get(url, params=params, headers=headers, **kwargs)
         response.raise_for_status()
@@ -6363,6 +6365,18 @@ class FinanceApi:
             params['dateTo'] = date_to
         headers: Dict[str, Any] = {}
         response = self.session.get(url, params=params, headers=headers, **kwargs)
+        response.raise_for_status()
+        try:
+            return response.json()
+        except ValueError:
+            return response.text
+
+    def api_payment_export_draft__post_partner_payment_by_ids_post__api__fiscal_fiscal_id__payment_export_draft_context_id__by_payment_ids(self, context_id: int, payment_ids_request: Dict[str, Any], fiscal_id: str, **kwargs) -> Any:
+        """Auto-generated method for POST /Api/Fiscal/{fiscalId}/PaymentExportDraft/{contextId}/ByPaymentIds"""
+        url = f"{self.base_url}/Api/Fiscal/{fiscal_id}/PaymentExportDraft/{context_id}/ByPaymentIds"
+        params: Dict[str, Any] = {}
+        headers: Dict[str, Any] = {}
+        response = self.session.post(url, params=params, headers=headers, json=payment_ids_request, **kwargs)
         response.raise_for_status()
         try:
             return response.json()

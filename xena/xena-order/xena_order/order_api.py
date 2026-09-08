@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 import requests
 
 class OrderApi:
@@ -2917,6 +2917,147 @@ class OrderApi:
             params['listOptions.forceNoPaging'] = list_options_force_no_paging
         headers: Dict[str, Any] = {}
         response = self.session.get(url, params=params, headers=headers, **kwargs)
+        response.raise_for_status()
+        try:
+            return response.json()
+        except ValueError:
+            return response.text
+
+    def api_order_task_budget_post__delete_delete__api__fiscal_fiscal_id__order_task_budget_post_id(self, id: int, fiscal_id: str, **kwargs) -> Any:
+        """Auto-generated method for DELETE /Api/Fiscal/{fiscalId}/OrderTaskBudgetPost/{id}"""
+        url = f"{self.base_url}/Api/Fiscal/{fiscal_id}/OrderTaskBudgetPost/{id}"
+        params: Dict[str, Any] = {}
+        headers: Dict[str, Any] = {}
+        response = self.session.delete(url, params=params, headers=headers, **kwargs)
+        response.raise_for_status()
+        try:
+            return response.json()
+        except ValueError:
+            return response.text
+
+    def api_order_task_line__delete_lines_delete__api__fiscal_fiscal_id__order_task_line__delete_lines(self, data: Dict[str, Any], fiscal_id: str, **kwargs) -> Any:
+        """Auto-generated method for DELETE /Api/Fiscal/{fiscalId}/OrderTaskLine/DeleteLines"""
+        url = f"{self.base_url}/Api/Fiscal/{fiscal_id}/OrderTaskLine/DeleteLines"
+        params: Dict[str, Any] = {}
+        headers: Dict[str, Any] = {}
+        response = self.session.delete(url, params=params, headers=headers, json=data, **kwargs)
+        response.raise_for_status()
+        try:
+            return response.json()
+        except ValueError:
+            return response.text
+
+    def api_order_task_budget_post__get_get__api__fiscal_fiscal_id__order_task_budget_post(self, order_id: int, fiscal_id: str, list_options_show_deactivated: bool = None, list_options_page: int = None, list_options_page_size: int = None, list_options_force_no_paging: bool = None, **kwargs) -> Any:
+        """Auto-generated method for GET /Api/Fiscal/{fiscalId}/OrderTaskBudgetPost"""
+        url = f"{self.base_url}/Api/Fiscal/{fiscal_id}/OrderTaskBudgetPost"
+        params: Dict[str, Any] = {}
+        params['orderId'] = order_id
+        if list_options_show_deactivated is not None:
+            params['listOptions.showDeactivated'] = list_options_show_deactivated
+        if list_options_page is not None:
+            params['listOptions.page'] = list_options_page
+        if list_options_page_size is not None:
+            params['listOptions.pageSize'] = list_options_page_size
+        if list_options_force_no_paging is not None:
+            params['listOptions.forceNoPaging'] = list_options_force_no_paging
+        headers: Dict[str, Any] = {}
+        response = self.session.get(url, params=params, headers=headers, **kwargs)
+        response.raise_for_status()
+        try:
+            return response.json()
+        except ValueError:
+            return response.text
+
+    def api_order_task_budget_post__get_get__api__fiscal_fiscal_id__order_task_budget_post_id(self, id: int, fiscal_id: str, **kwargs) -> Any:
+        """Auto-generated method for GET /Api/Fiscal/{fiscalId}/OrderTaskBudgetPost/{id}"""
+        url = f"{self.base_url}/Api/Fiscal/{fiscal_id}/OrderTaskBudgetPost/{id}"
+        params: Dict[str, Any] = {}
+        headers: Dict[str, Any] = {}
+        response = self.session.get(url, params=params, headers=headers, **kwargs)
+        response.raise_for_status()
+        try:
+            return response.json()
+        except ValueError:
+            return response.text
+
+    def api_resource_post__get_totals_get__api__fiscal_fiscal_id__resource_post__totals(self, fiscal_id: str, filter_resource_ids: List[int] = None, filter_is_billable: bool = None, filter_is_at_work: bool = None, filter_is_paid: bool = None, filter_date_from: int = None, filter_date_to: int = None, filter_order_id: int = None, filter_order_task_id: int = None, filter_activity_type_id: int = None, filter_is_approved: bool = None, filter_project_id: int = None, filter_partner_id: int = None, filter_bearer_id: int = None, filter_department_id: int = None, filter_purpose_id: int = None, filter_limit_to_department: bool = None, filter_limit_to_bearer: bool = None, filter_limit_to_purpose: bool = None, **kwargs) -> Any:
+        """Auto-generated method for GET /Api/Fiscal/{fiscalId}/ResourcePost/Totals"""
+        url = f"{self.base_url}/Api/Fiscal/{fiscal_id}/ResourcePost/Totals"
+        params: Dict[str, Any] = {}
+        if filter_resource_ids is not None:
+            params['filter.resourceIds'] = filter_resource_ids
+        if filter_is_billable is not None:
+            params['filter.isBillable'] = filter_is_billable
+        if filter_is_at_work is not None:
+            params['filter.isAtWork'] = filter_is_at_work
+        if filter_is_paid is not None:
+            params['filter.isPaid'] = filter_is_paid
+        if filter_date_from is not None:
+            params['filter.dateFrom'] = filter_date_from
+        if filter_date_to is not None:
+            params['filter.dateTo'] = filter_date_to
+        if filter_order_id is not None:
+            params['filter.orderId'] = filter_order_id
+        if filter_order_task_id is not None:
+            params['filter.orderTaskId'] = filter_order_task_id
+        if filter_activity_type_id is not None:
+            params['filter.activityTypeId'] = filter_activity_type_id
+        if filter_is_approved is not None:
+            params['filter.isApproved'] = filter_is_approved
+        if filter_project_id is not None:
+            params['filter.projectId'] = filter_project_id
+        if filter_partner_id is not None:
+            params['filter.partnerId'] = filter_partner_id
+        if filter_bearer_id is not None:
+            params['filter.bearerId'] = filter_bearer_id
+        if filter_department_id is not None:
+            params['filter.departmentId'] = filter_department_id
+        if filter_purpose_id is not None:
+            params['filter.purposeId'] = filter_purpose_id
+        if filter_limit_to_department is not None:
+            params['filter.limitToDepartment'] = filter_limit_to_department
+        if filter_limit_to_bearer is not None:
+            params['filter.limitToBearer'] = filter_limit_to_bearer
+        if filter_limit_to_purpose is not None:
+            params['filter.limitToPurpose'] = filter_limit_to_purpose
+        headers: Dict[str, Any] = {}
+        response = self.session.get(url, params=params, headers=headers, **kwargs)
+        response.raise_for_status()
+        try:
+            return response.json()
+        except ValueError:
+            return response.text
+
+    def api_order_task_budget_post__post_create_default_post__api__fiscal_fiscal_id__order_task_order_task_id__order_task_budget_post__standard(self, order_task_id: int, fiscal_id: str, **kwargs) -> Any:
+        """Auto-generated method for POST /Api/Fiscal/{fiscalId}/OrderTask/{orderTaskId}/OrderTaskBudgetPost/Standard"""
+        url = f"{self.base_url}/Api/Fiscal/{fiscal_id}/OrderTask/{order_task_id}/OrderTaskBudgetPost/Standard"
+        params: Dict[str, Any] = {}
+        headers: Dict[str, Any] = {}
+        response = self.session.post(url, params=params, headers=headers, **kwargs)
+        response.raise_for_status()
+        try:
+            return response.json()
+        except ValueError:
+            return response.text
+
+    def api_order_task_budget_post__post_post__api__fiscal_fiscal_id__order_task_budget_post(self, dto: Dict[str, Any], fiscal_id: str, **kwargs) -> Any:
+        """Auto-generated method for POST /Api/Fiscal/{fiscalId}/OrderTaskBudgetPost"""
+        url = f"{self.base_url}/Api/Fiscal/{fiscal_id}/OrderTaskBudgetPost"
+        params: Dict[str, Any] = {}
+        headers: Dict[str, Any] = {}
+        response = self.session.post(url, params=params, headers=headers, json=dto, **kwargs)
+        response.raise_for_status()
+        try:
+            return response.json()
+        except ValueError:
+            return response.text
+
+    def api_order_task_budget_post__put_put__api__fiscal_fiscal_id__order_task_budget_post_id(self, dto: Dict[str, Any], fiscal_id: str, id: str, **kwargs) -> Any:
+        """Auto-generated method for PUT /Api/Fiscal/{fiscalId}/OrderTaskBudgetPost/{id}"""
+        url = f"{self.base_url}/Api/Fiscal/{fiscal_id}/OrderTaskBudgetPost/{id}"
+        params: Dict[str, Any] = {}
+        headers: Dict[str, Any] = {}
+        response = self.session.put(url, params=params, headers=headers, json=dto, **kwargs)
         response.raise_for_status()
         try:
             return response.json()

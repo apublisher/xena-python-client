@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "xena-client"
-version = "0.1.0"
+version = "0.2.0"
 description = "Unified client for Xena API - provides easy access to all Xena domains"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -36,15 +36,15 @@ dependencies = [
     "xena-core>=0.1.0",
     "xena-developer>=0.1.0",
     "xena-document>=0.1.0",
-    "xena-finance>=0.1.0",
-    "xena-order>=0.1.0",
+    "xena-finance>=0.2.0",
+    "xena-order>=0.2.0",
     "xena-partner>=0.1.0",
     "xena-price>=0.1.0",
     "xena-project>=0.1.0",
     "xena-provider>=0.1.0",
     "xena-reporting>=0.1.0",
     "xena-scheduling>=0.1.0",
-    "xena-subscription>=0.1.0",
+    "xena-subscription>=0.2.0",
 ]
 
 [project.urls]
