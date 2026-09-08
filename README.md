@@ -8,7 +8,10 @@ The unified client also accepts an existing OAuth access token without requiring
 refresh support: `XenaClient(access_token=token, fiscal_id=fiscal_id)`.
 After another login, use `client.set_access_token(new_token)`. See the
 [OAuth and binary download guide](xena/xena-client/README.md#oauth-access-tokens-020).
-Login and refresh remain the application's responsibility. The current wrapper
+An experimental `XenaOAuth` helper now prepares login URLs and exchanges callback
+codes with PKCE; see the [OAuth setup guide](xena/xena-client/OAUTH.md).
+**Live Xena compatibility is unconfirmed.** Callback hosting and any refresh remain
+the application's responsibility; no refresh token is required. The current wrapper
 still requires API-key credentials; this change adds OAuth to the client itself.
 
 `xena-client`, `xena-order`, `xena-finance`, and `xena-subscription` are version

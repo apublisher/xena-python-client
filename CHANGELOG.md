@@ -2,6 +2,8 @@
 
 ## 0.2.0 — 2026-09-09
 
+- Add experimental OAuthConfig/XenaOAuth helpers for configurable redirect URI, Authorization Code with S256 PKCE, state checking and a single-use callback exchange. Live Xena compatibility is unconfirmed. Refresh-token issuance is optional; automatic refresh remains out of scope.
+
 - Add existing OAuth bearer-token support to XenaClient through access_token and set_access_token. Refresh tokens are optional at the application level; this client never refreshes or replays rejected requests automatically.
 - Preserve API-key authentication, reject ambiguous credentials and document original-byte downloads through the shared authenticated session.
 

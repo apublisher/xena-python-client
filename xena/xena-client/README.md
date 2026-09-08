@@ -4,6 +4,12 @@ Unified client for Xena API - provides easy access to all Xena domains.
 
 ## OAuth access tokens (0.2.0)
 
+**Experimental login helper: not verified against a Xena app.** See
+[OAUTH.md](OAUTH.md) for configurable redirect URI, Authorization Code with PKCE,
+client-secret options and callback integration. Receiving no refresh token is
+supported. Real login and document authorization must be verified before relying
+on this flow in an OAuth-dependent use case.
+
 Use an access token obtained through your application's login flow. A refresh
 token, client registration or client secret is not required by this client to
 send an already-issued token. Xena still determines the token's permissions.
@@ -23,8 +29,9 @@ An explicit credential overrides authentication in config.json. Explicit OAuth
 does not implicitly read a default config file; pass config_path if needed.
 Config files may alternatively contain `access_token` instead of `api_key`.
 
-The client does not perform interactive login, token exchange, automatic refresh,
-expiry prediction, or token persistence. If Xena rejects the token, generated
+`XenaClient` uses the access token; the separate `XenaOAuth` helper can prepare
+authorization and exchange a callback code. Neither performs automatic refresh
+or token persistence. If Xena rejects the token, generated
 API methods raise `requests.HTTPError` (inspect `error.response.status_code`).
 There is no automatic retry or fallback to an API key. Obtain a new token and
 call `set_access_token` before making further calls. Existing domain instances
