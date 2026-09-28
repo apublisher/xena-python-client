@@ -6,6 +6,7 @@ import hashlib
 import hmac
 import json
 import math
+import re
 import secrets
 import time
 from typing import Mapping, Optional, Tuple
@@ -36,6 +37,7 @@ class OAuthConfig:
     token_endpoint_auth_method: str = 'auto'
     response_type: str = 'code'
     response_mode: str = 'query'
+    callback_app_id: Optional[str] = None
 
     def __post_init__(self):
         if not isinstance(self.client_id, str) or not self.client_id.strip():
@@ -67,6 +69,10 @@ class OAuthConfig:
             raise ValueError('Hybrid responses require form_post')
         if 'id_token' in self.response_type.split() and 'openid' not in self.scopes:
             raise ValueError('A response containing id_token requires the openid scope')
+        if self.callback_app_id is not None and (
+                not isinstance(self.callback_app_id, str) or not re.fullmatch(
+                    r'[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?', self.callback_app_id)):
+            raise ValueError('callback_app_id must be 1-63 lowercase letters, digits or hyphens, starting with a letter and ending with a letter or digit')
 
     @classmethod
     def from_file(cls, path: str, **overrides):
@@ -113,7 +119,8 @@ class XenaOAuth:
 
     def authorization_url(self) -> str:
         """Begin a login, replacing any prior pending attempt. Open URL in browser."""
-        state = secrets.token_urlsafe(32)
+        state = (secrets.token_hex(32) + '-' + self.config.callback_app_id
+                 if self.config.callback_app_id is not None else secrets.token_urlsafe(32))
         verifier = secrets.token_urlsafe(64)
         challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode('ascii')).digest()).rstrip(b'=').decode('ascii')
         self._pending = (state, verifier, time.monotonic() + 600)
@@ -142,7 +149,8 @@ class XenaOAuth:
         state, verifier, deadline = self._pending_login()
         return {'state': state, 'code_verifier': verifier,
                 'expires_at': time.time() + (deadline - time.monotonic()),
-                'client_id': self.config.client_id, 'redirect_uri': self.config.redirect_uri}
+                'client_id': self.config.client_id, 'redirect_uri': self.config.redirect_uri,
+                'callback_app_id': self.config.callback_app_id}
 
     def restore_pending_login(self, pending: Mapping) -> None:
         """Restore an attempt from trusted server-side storage on another worker."""
@@ -150,8 +158,11 @@ class XenaOAuth:
             state, verifier, expiry = pending['state'], pending['code_verifier'], pending['expires_at']
             allowed = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~'
             if (pending['client_id'] != self.config.client_id or pending['redirect_uri'] != self.config.redirect_uri
+                    or pending.get('callback_app_id') != self.config.callback_app_id
                     or not isinstance(state, str) or not 32 <= len(state) <= 128
                     or any(c not in allowed for c in state)
+                    or (self.config.callback_app_id is not None and not re.fullmatch(
+                        r'[0-9a-f]{64}-' + re.escape(self.config.callback_app_id), state))
                     or not isinstance(verifier, str) or not 43 <= len(verifier) <= 128
                     or any(c not in allowed for c in verifier)
                     or isinstance(expiry, bool) or not isinstance(expiry, (float, int)) or not math.isfinite(expiry)):

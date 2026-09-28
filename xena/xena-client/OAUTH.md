@@ -55,6 +55,44 @@ this is also the URI sent during code exchange.
 
 ## Login and callback
 
+### Optional shared callback router
+
+For internal applications sharing an OAuth registration, pass
+`callback_app_id='audit-manager'` to `OAuthConfig`. State then has the format
+`<64 lowercase hex characters>-audit-manager`: 32 cryptographically random bytes
+per attempt, followed by a routing ID. IDs are 1–63 lowercase ASCII letters,
+digits or hyphens, start with a letter and end with a letter or digit. The router
+splits at the first hyphen and selects a fixed, registered destination.
+
+```python
+config = OAuthConfig(
+    client_id=os.environ['XENA_CLIENT_ID'],
+    client_secret=os.environ['XENA_CLIENT_SECRET'],
+    redirect_uri=os.environ['XENA_REDIRECT_URI'],
+    callback_app_id=os.environ.get('XENA_CALLBACK_APP_ID') or None,
+    response_mode='form_post',
+    # Supply scopes, response_type and client authentication as registered.
+)
+```
+
+The consumer loads its environment; the library does not read `.env` itself.
+Without `callback_app_id`, state generation and direct OAuth behavior are
+unchanged. API-key consumers require no router settings.
+
+Keep the **router's registered redirect URI** for both authorization and code
+exchange. The consumer still hosts its own callback, binds the pending attempt
+to the initiating browser session, and validates the **entire** state. A routing
+ID is not authentication. A thin router does not know whether an attempt is
+genuine, expired or already consumed. Exported pending records are bound to
+the configured routing ID as well as client ID and redirect URI.
+
+Use `exchange_callback_params()` at the receiving app, also for forwarded query
+responses; `exchange_callback(full_url)` intentionally requires the URL to match
+the configured redirect URI. The router must preserve the POST body (e.g. HTTP
+307 for `form_post`) and route only to an administrator's HTTPS allowlist.
+
+### Starting a login
+
 In the consumer's login handler:
 
 ```python
