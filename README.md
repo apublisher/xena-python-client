@@ -15,8 +15,10 @@ and storage stay with the consumer. Failed API operations are never replayed
 automatically. The wrapper's existing constructor still requires API-key
 credentials; an OAuth wrapper entry point is separate work.
 
-The PHP experiment confirmed Xena code exchange and refresh. This Python change
-has offline tests; live integration with the consuming app is still required.
+Live testing on 2026-09-28 confirmed Python code exchange, persistent token
+loading in a new process, automatic refresh and HTTP 200 from a read-only API
+call before and after refresh. See the [masked test result](docs/oauth-live-test-2026-09-28.json).
+Each consuming application still supplies its own callback/session and storage integration.
 
 Only `xena-client` advances to 0.3.0. Domain package versions are unchanged.
 

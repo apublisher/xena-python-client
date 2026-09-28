@@ -1,0 +1,40 @@
+{
+  "started_utc": "2026-09-28T15:29:50Z",
+  "client_version": "0.3.0",
+  "commit": "4b2ce6bf24a6643260543b2a74c6745c486d8782",
+  "python": "3.10.12",
+  "requests": "2.25.1",
+  "response_type": "code id_token token",
+  "response_mode": "form_post",
+  "pkce": "S256",
+  "offline_access": true,
+  "state": "passed",
+  "callback_utc": "2026-09-28T15:29:53Z",
+  "code_exchange": {
+    "ok": true,
+    "access_token_received": true,
+    "refresh_token_received": true,
+    "access_expires_in_seconds": 3600
+  },
+  "loaded_in_new_process": true,
+  "api_before_refresh": {
+    "ok": true,
+    "http_status": 200,
+    "json_received": true
+  },
+  "locally_expired_for_test": true,
+  "api_after_refresh": {
+    "ok": true,
+    "http_status": 200,
+    "json_received": true
+  },
+  "automatic_refresh": {
+    "ok": true,
+    "saved_before_api": true,
+    "access_token_changed": false,
+    "refresh_token_changed": true,
+    "access_expires_in_seconds": 3600
+  },
+  "finished_utc": "2026-09-28T15:29:53Z",
+  "callback_transport": "Registered legacy callback forwarded with HTTP 307"
+}

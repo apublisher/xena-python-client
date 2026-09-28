@@ -206,13 +206,28 @@ The library does not host a server or configure databases.
 
 ## Verification and sources
 
-The PHP test using `code id_token token`, `form_post`, S256 PKCE,
-`client_secret_post` and `offline_access` successfully exchanged a code and
-refreshed an access token without another login. The Python implementation has
-offline transport, storage, concurrency and API-key regression tests. It has
-**not yet been run against live Xena**; callback/session integration and access
-to the intended resources still require a consuming-application test. A returned
-refresh token alone does not prove that its value rotated.
+A live Python test passed on 2026-09-28 at 15:29:53 UTC, using client code at
+commit `4b2ce6bf24a6643260543b2a74c6745c486d8782`, Python 3.10.12 and requests
+2.25.1. The configuration was `code id_token token`, `form_post`, S256 PKCE,
+`client_secret_post` and `openid profile testapi offline_access`. The registered
+legacy callback forwarded the POST with HTTP 307 to the private test application.
+
+- Code exchange returned access and refresh tokens, with a 3600-second access lifetime.
+- Tokens were persisted and loaded by a new Python process.
+- The real generated `GET /Api/User/FiscalSetup` method returned HTTP 200 and JSON.
+- After the test advanced only the stored access-token expiry, the next API call
+  triggered automatic refresh. The replacement refresh token was saved and that
+  API call also returned HTTP 200 and JSON, without another login.
+- The refresh-token value changed. The access-token value remained the same in
+  this immediate refresh; the test does not require a distinct access-token string.
+
+The [masked report](../../docs/oauth-live-test-2026-09-28.json) contains status and
+timing only. No token values, codes, application credentials or organization data
+are published. The local expiry adjustment exercises refresh immediately; it is
+not a real one-hour expiry or month-long inactivity test. Other API resources,
+registrations and consuming applications' session/storage arrangements need
+their own integration checks. Offline tests also cover error handling,
+concurrency and API-key compatibility.
 
 - [Xena OAuth setup](https://dev.xena.biz/xena-developer/development/get-started/xena-api-using-oauth)
 - [Xena discovery metadata](https://login.xena.biz/.well-known/openid-configuration)

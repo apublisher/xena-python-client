@@ -12,9 +12,10 @@ for registration, callback integration, storage and concurrency examples.
 
 API-key users need no changes or additional dependencies. The default constructor
 and config.json behavior are preserved. Callback hosting and token storage belong
-to the consuming application. The PHP experiment confirmed code exchange and
-refresh with a registered Xena app; the Python integration has offline tests and
-still needs a live test in a consuming application.
+to the consuming application. A live test on 2026-09-28 confirmed Python code
+exchange, token persistence, automatic refresh and HTTP 200 from read-only API
+calls before and after refresh. See [OAUTH.md](OAUTH.md#verification-and-sources)
+for the tested configuration and limits of that verification.
 
 ## OAuth access tokens (0.2.0)
 
