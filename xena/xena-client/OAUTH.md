@@ -1,138 +1,224 @@
-# Experimental Xena OAuth setup
+# OAuth in xena-client 0.3.0
 
-**Not verified against a registered Xena application.** Authorization Code with
-PKCE, client-secret requirements, redirect acceptance, issued scopes and media
-access still need a real integration check. The implementation has offline tests;
-these do not establish that a particular Xena app can use this flow. Keep using
-API keys or an already-issued bearer token where appropriate until that check.
+OAuth is opt-in. Existing `XenaClient(api_key=..., fiscal_id=...)`, positional
+arguments and API-key config files work unchanged. No OAuth configuration,
+callback route, new dependency or token storage is needed for API-key consumers.
+An `oauth` section in config.json does not activate OAuth automatically.
 
-This helper implements OAuth access-token acquisition, not an OpenID Connect user
-login/identity validator. It does not validate or use ID tokens. It does not host
-a callback server, open a browser, store tokens, or automatically refresh them.
+The client handles authorization URLs, code exchange with S256 PKCE, bearer
+headers and on-demand refresh. The consuming application handles HTTP routes,
+browser redirects, association with its own user/session, secret storage,
+persistent token storage and asking the user to authorize again when necessary.
 
-## Configuration in the consuming application
+## Register and configure the application
 
-Add this section to the application's config.json:
+Register an OAuth application with Xena and configure its exact callback URI.
+`client_id` identifies this registration; it is **not** the `fiscal_id`, which
+identifies the accounting organization used by API methods. Scopes, response
+type and client authentication must be allowed for that registration.
 
-```json
-{
-  "fiscal_id": "YOUR_FISCAL_ID",
-  "oauth": {
-    "client_id": "YOUR_REGISTERED_CLIENT_ID",
-    "redirect_uri": "http://127.0.0.1:8765/oauth/callback",
-    "scopes": ["testapi"],
-    "token_endpoint_auth_method": "auto"
-  }
-}
-```
-
-Register exactly the same redirect URI in Xena. The address above is an example,
-not an address this package starts listening on. Your application must serve it.
-HTTPS callbacks are supported, with HTTP allowed only for localhost/loopback.
-This helper requires callback addresses without a query string or fragment.
-
-`auto` uses `client_secret_basic` when a secret is supplied, and no client
-authentication when it is absent. You can explicitly select `client_secret_basic`,
-`client_secret_post` or `none`. **Public-client token exchange without a secret is
-not confirmed for Xena:** the observed discovery metadata advertises basic/post
-client-secret authentication. PKCE does not remove a confidential client's secret
-requirement. The chosen method must match the app registration.
-
-Pass a secret from the consuming application's environment or secret storage:
+These settings match the successful PHP experiment on 2026-09-28. Substitute
+your own registered credentials and callback:
 
 ```python
 import os
-from xena_client import OAuthConfig, XenaOAuth, XenaClient
+from xena_client import OAuthConfig, XenaOAuth
 
-config = OAuthConfig.from_file(
-    "config.json",
-    client_secret=os.environ.get("XENA_CLIENT_SECRET"),
+config = OAuthConfig(
+    client_id=os.environ['XENA_CLIENT_ID'],
+    client_secret=os.environ['XENA_CLIENT_SECRET'],
+    redirect_uri='https://your-app.example/xena/callback',
+    scopes=('openid', 'profile', 'testapi', 'offline_access'),
+    response_type='code id_token token',
+    response_mode='form_post',
+    token_endpoint_auth_method='client_secret_post',
 )
 oauth = XenaOAuth(config)
+```
+
+Existing defaults remain `response_type='code'`, `response_mode='query'`, scopes
+`('testapi',)` and authentication `auto`. Choose `code` if the registration allows
+it. Hybrid types `code id_token`, `code token`, and `code id_token token` require
+`form_post`. Requesting `id_token` requires `openid`. Pure implicit flows without
+a code and fragment callbacks are not supported.
+
+`auto` uses `client_secret_basic` with a secret, otherwise `none`.
+`client_secret_post` can be selected explicitly. Public-client exchange without a
+secret has not been confirmed for Xena. PKCE does not replace a confidential
+client's secret. Load an application's JSON `oauth` section with
+`OAuthConfig.from_file(path, client_secret=...)` if preferred.
+
+Callbacks must use HTTPS, except HTTP loopback for local apps. Callback URIs
+with query strings or fragments are not supported. If a callback is forwarded
+through another endpoint, keep the **original registered URI** in `redirect_uri`:
+this is also the URI sent during code exchange.
+
+## Login and callback
+
+In the consumer's login handler:
+
+```python
+oauth = XenaOAuth(config)  # one pending login per instance
 login_url = oauth.authorization_url()
+pending = oauth.export_pending_login()
+# Store pending in the initiating user's server-side session, then redirect
+# the browser to login_url. These operations belong to your web framework.
 ```
 
-Direct construction with `OAuthConfig(client_id=..., redirect_uri=...)` also works.
-Loading configuration and building the URL perform no network requests.
+`authorization_url()` creates state and a PKCE verifier, replaces any previous
+pending attempt on the instance and expires after ten minutes. It requests
+`prompt=consent` with `offline_access`. Building the URL makes no network request.
+The exported dictionary is JSON-serializable and contains the **secret verifier**.
+Store it on the server, never in a browser-visible cookie or URL. Bind it to the
+initiating session and intended Xena connection, and consume the stored record
+atomically once. Arrange for that session to be available on a cross-site POST
+when using `form_post`, including appropriate browser cookie settings.
 
-## Browser and callback lifecycle
-
-1. In the application's login handler, create the helper and call
-   `authorization_url()`. Redirect the user's browser to the returned URL.
-2. Keep that exact helper instance in the initiating user's **server-side** session
-   for the callback. It holds state and the PKCE verifier. Do not share a global
-   instance between users or place it in client-visible cookies. Applications
-   running multiple workers must arrange for the callback to reach its stored
-   instance; this initial helper does not implement distributed session storage.
-3. In the callback handler, recover the helper for that same user and pass the full
-   callback URL (including its query) to `exchange_callback()`:
+In the consumer's callback handler, recover and consume that pending record:
 
 ```python
-# In your callback handler, using the helper retained from step 1:
-tokens = oauth.exchange_callback(callback_url)
-client = XenaClient(access_token=tokens.access_token, fiscal_id=fiscal_id)
+oauth = XenaOAuth(config)
+oauth.restore_pending_login(pending)
+tokens = oauth.exchange_callback_params(form_parameters)  # form_post
+# For response_mode='query', use oauth.exchange_callback(full_callback_url).
+token_manager.store_tokens(tokens)
+# Redirect the browser to the application's own page.
 ```
 
-The helper checks the callback address and state, then posts the code, PKCE
-verifier and redirect URI to Xena. It requests `response_mode=query`; callbacks
-using fragments or form_post are not implemented. State and verifier are random,
-each attempt expires after ten minutes, and starting another login replaces the
-pending attempt. Serialize callbacks per helper instance. Once a valid callback
-is consumed, even a failed exchange requires starting a new login. Token POSTs
-have a timeout and do not follow redirects or retry automatically.
+The application supplies `pending`, `form_parameters` and `token_manager`.
+Pass parameters as a mapping of strings or single-value lists. Multidicts with
+`lists()` are supported; otherwise preserve duplicates when parsing the body so
+the helper can reject them. Serve the registered callback and accept the
+configured response mode in the application.
 
-Do not log callback URLs, authorization codes, token objects converted to dicts,
-or token HTTP payloads. Token and client-secret fields are excluded from object
-repr, but their values remain accessible to the application when needed.
+Alternatively retain the original helper in a server-side session and call its
+exchange method directly. Do not share that instance across users. Serialize
+callback handling. After a valid callback is consumed, a denied login or failed
+exchange requires a fresh login rather than reusing the code.
 
-## Refresh is optional and not required for early milestones
+Only tokens from the token endpoint are used. Access/ID tokens arriving in a
+hybrid callback are ignored. This library does **not** validate ID-token claims
+or implement OpenID Connect user identity login. Associate the authorization
+with the application's own session; do not treat decoded ID-token claims as
+verified identity. State and PKCE bind the code exchange to the attempt.
 
-The default scope is only `testapi`. To request offline access, configure
-`"scopes": ["testapi", "offline_access"]` **if the registration permits it**.
-The response may still omit a refresh token. This is a successful login:
+## Persistent storage and automatic refresh
 
-- `tokens.access_token`: required access token.
-- `tokens.refresh_token`: optional; `None` when absent.
-- `tokens.expires_at`: optional Unix timestamp derived from `expires_in`; `None`
-  when the server supplies no duration. No lifetime is invented.
-- `tokens.scope`: scope string returned by the server, if supplied.
-
-Refresh execution is intentionally not part of this helper. For the first
-milestones, repeat browser login when necessary and replace the client's token:
+Configure one token manager for each Xena authorization/connection:
 
 ```python
-new_login_url = oauth.authorization_url()
-# Open/redirect to new_login_url and receive the next callback in the app.
-new_tokens = oauth.exchange_callback(new_callback_url)
-client.set_access_token(new_tokens.access_token)
+from xena_client import OAuthTokenManager, XenaClient
+
+token_manager = OAuthTokenManager(
+    XenaOAuth(config),
+    load_tokens=load_tokens,
+    save_tokens=save_tokens,
+)
+client = XenaClient(oauth=token_manager, fiscal_id=fiscal_id)
 ```
 
-OAuth failures raise `OAuthError` without returning raw error payloads. API calls
-continue to raise `requests.HTTPError` for server rejections such as HTTP 401.
-No failed accounting operation is automatically replayed. Tokens are not persisted
-by the package. The wrapper's existing constructor still requires API-key
-credentials; this feature is in the client package only.
+The application supplies two synchronous callbacks:
 
-## What remains to verify with Xena
+- `load_tokens()` returns `OAuthTokens` for this connection, or None when there
+  is no authorization.
+- `save_tokens(tokens)` atomically replaces the **whole** stored record.
+  If `tokens is None`, delete/clear it. Return only after durable storage succeeds;
+  raise an exception on failure.
 
-- Registered app allows `response_type=code` and S256 PKCE.
-- Callback address and token endpoint client authentication are accepted.
-- `testapi` access is issued and works for the intended document endpoint.
-- Whether that document endpoint also works with API-key-only authentication.
-- Optional offline access and refresh issuance, when relevant later.
+`OAuthTokens` contains `access_token`, `token_type`, `expires_at`, `refresh_token`
+and `scope`. `expires_at` is an absolute Unix timestamp for the **access token**.
+Use `dataclasses.asdict(tokens)` and `OAuthTokens(**record)` to serialize/restore
+a private record. Keep tokens and client secrets in protected server storage;
+do not log these dictionaries, callback bodies, codes or HTTP payloads. Secret
+fields are excluded from dataclass repr, not from serialization.
 
-Xena's documentation describes registration and enabling offline access, but a
-separate App Store approval requirement for refresh has **not** been established.
-The server advertises code/PKCE support generally; that is not proof of permission
-for a particular app registration.
+Before preparing each API request, the manager reloads the record. If the access
+token expires within 60 seconds and a refresh token exists, it refreshes, saves
+the response, then supplies the bearer token. Set `refresh_leeway=...` to change
+the margin. All domain APIs and downloads through `client.session` share this
+behavior. Constructing the client does not load tokens or call Xena. Managed
+credentials are restricted to the HTTPS API origin; cross-host redirects do not
+forward the bearer token.
 
-Sources used for the implementation:
+A new refresh token replaces the old one. If the response omits it, the old one
+is retained. An omitted scope also retains the previous scope. An omitted
+`expires_in` means the new access-token expiry is unknown; no lifetime is
+invented. Call `token_manager.refresh()` explicitly if needed in that case.
+`oauth.refresh_tokens(tokens)` is available when the application wants to manage
+refresh and persistence itself.
+
+Refresh happens when the application needs a token and can happen after access
+expiry, so no scheduled keepalive is required. A month of inactivity works
+**only if Xena still accepts the refresh token**. Its lifetime and inactivity
+policy are controlled by Xena; a one-hour access-token duration does not establish
+a refresh-token lifetime.
+
+### Concurrency and failures
+
+The manager serializes load/refresh/save with a thread lock. Share it between
+clients for the same authorization. `requests.Session` itself should not be
+mutated concurrently; separate client sessions may share one manager.
+
+For separate managers/processes using the same record, pass `lock=` with a
+reusable shared/distributed lock context manager for that connection. Use it
+for every refresh and login/logout update. Callbacks must read the latest
+committed record after acquiring the lock. Default locking cannot coordinate
+different workers; racing refreshes can lose rotated tokens.
+
+- `OAuthLoginRequired`: no stored tokens, expired access without refresh, or
+  refresh rejected with `invalid_grant`. Start authorization again. A rejected
+  refresh clears the stored record.
+- `OAuthStorageError`: loading/saving failed; no API request is sent. The manager
+  retains a failed pending save and retries saving it on its next call before
+  reading an older token. Keep that manager alive during recovery. If it is lost
+  after rotation, a new login may be needed. Multiple-worker applications must
+  coordinate storage-failure recovery as well as normal refreshes.
+- Other `OAuthError`: token HTTP failure, invalid response or configuration
+  mismatch. Remote error payload details are omitted. Another login may not fix
+  the underlying problem.
+- `requests.HTTPError`: API rejection, including HTTP 401. The library never
+  automatically replays the operation. Decide how to recover before making
+  another call, especially after a write. Do not blindly retry accounting writes.
+
+Token HTTP requests have a timeout (30 seconds by default), do not follow
+redirects and do not retry automatically. A timeout can occur after Xena processed
+a refresh, so rotation may already have happened. Persistent failure may require
+a new login. There is no fallback to API-key authentication.
+
+`token_manager.store_tokens(None)` clears local authorization; it does not revoke
+tokens at Xena. `client.set_access_token(token)` switches to manual-token mode
+and stops using the token manager.
+
+## Existing manual bearer mode and wrapper
+
+`XenaClient(access_token=token, fiscal_id=...)` still sends an already-issued
+token without login, expiry tracking, persistence or refresh. Replace it with
+`client.set_access_token(new_token)`. Select only one of `api_key`, `access_token`
+or `oauth`. Explicit authentication overrides file authentication. Explicit
+OAuth does not read a default config file; an explicit `config_path` may still
+supply `fiscal_id`.
+
+The existing wrapper's API-key constructor continues to work unchanged. This
+release adds managed OAuth to **xena-client**; a wrapper OAuth entry point must
+accept/inject this authenticated client or manager without requiring a dummy API
+key. Callback hosting, registration and storage remain consumer responsibilities.
+The library does not host a server or configure databases.
+
+## Verification and sources
+
+The PHP test using `code id_token token`, `form_post`, S256 PKCE,
+`client_secret_post` and `offline_access` successfully exchanged a code and
+refreshed an access token without another login. The Python implementation has
+offline transport, storage, concurrency and API-key regression tests. It has
+**not yet been run against live Xena**; callback/session integration and access
+to the intended resources still require a consuming-application test. A returned
+refresh token alone does not prove that its value rotated.
 
 - [Xena OAuth setup](https://dev.xena.biz/xena-developer/development/get-started/xena-api-using-oauth)
 - [Xena discovery metadata](https://login.xena.biz/.well-known/openid-configuration)
-- [OAuth 2.0](https://www.rfc-editor.org/rfc/rfc6749.html)
+- [OAuth 2.0 refresh](https://www.rfc-editor.org/rfc/rfc6749.html#section-6)
 - [PKCE](https://www.rfc-editor.org/rfc/rfc7636.html)
 
-The endpoint addresses match the discovery metadata inspected on 2026-09-09.
-Automatic discovery is not implemented. See README.md for original-byte document
-downloads through the authenticated session.
+Authorization and token endpoint addresses are fixed to login.xena.biz.
+Automatic discovery is not implemented. See README.md for downloading original
+document bytes through the authenticated session.

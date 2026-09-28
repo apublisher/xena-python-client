@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0 — 2026-09-28
+
+- Add opt-in `XenaClient(oauth=OAuthTokenManager(...))` with on-demand refresh, application-supplied token load/save callbacks and serialized refresh/persistence. Save replacement refresh tokens before API calls; preserve an existing refresh token if the response omits one.
+- Add `XenaOAuth.refresh_tokens`, form_post callback parsing, configurable code/hybrid response types and server-side pending-login export/restore. Request consent with offline_access.
+- Add `OAuthLoginRequired` and `OAuthStorageError`. Never replay API operations, automatically retry token HTTP requests or fall back to API keys. Retain a pending token update in the manager when storage fails.
+- Preserve API-key construction/configuration, manual access_token usage and generated domain APIs. No new runtime dependencies; only the unified xena-client package advances to 0.3.0.
+- Document the successful PHP OAuth experiment and consumer responsibilities. Python coverage uses offline transports; live Python/consumer integration remains to be verified.
+
 ## 0.2.0 — 2026-09-09
 
 - Add experimental OAuthConfig/XenaOAuth helpers for configurable redirect URI, Authorization Code with S256 PKCE, state checking and a single-use callback exchange. Live Xena compatibility is unconfirmed. Refresh-token issuance is optional; automatic refresh remains out of scope.

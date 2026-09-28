@@ -2,13 +2,21 @@
 
 Unified client for Xena API - provides easy access to all Xena domains.
 
-## OAuth access tokens (0.2.0)
+## Optional OAuth with refresh (0.3.0)
 
-**Experimental login helper: not verified against a Xena app.** See
-[OAUTH.md](OAUTH.md) for configurable redirect URI, Authorization Code with PKCE,
-client-secret options and callback integration. Receiving no refresh token is
-supported. Real login and document authorization must be verified before relying
-on this flow in an OAuth-dependent use case.
+Use `XenaClient(oauth=token_manager, fiscal_id=...)` to opt into on-demand refresh.
+`OAuthTokenManager` receives application-supplied load/save functions and saves
+replacement tokens before an API request is sent. `XenaOAuth` handles login URLs,
+code/PKCE exchange, query or form_post callbacks and refresh. See [OAUTH.md](OAUTH.md)
+for registration, callback integration, storage and concurrency examples.
+
+API-key users need no changes or additional dependencies. The default constructor
+and config.json behavior are preserved. Callback hosting and token storage belong
+to the consuming application. The PHP experiment confirmed code exchange and
+refresh with a registered Xena app; the Python integration has offline tests and
+still needs a live test in a consuming application.
+
+## OAuth access tokens (0.2.0)
 
 Use an access token obtained through your application's login flow. A refresh
 token, client registration or client secret is not required by this client to
@@ -29,9 +37,8 @@ An explicit credential overrides authentication in config.json. Explicit OAuth
 does not implicitly read a default config file; pass config_path if needed.
 Config files may alternatively contain `access_token` instead of `api_key`.
 
-`XenaClient` uses the access token; the separate `XenaOAuth` helper can prepare
-authorization and exchange a callback code. Neither performs automatic refresh
-or token persistence. If Xena rejects the token, generated
+This manual `access_token` mode does not perform automatic refresh or persistence.
+Opt in with `oauth=token_manager` for managed refresh. If Xena rejects the token, generated
 API methods raise `requests.HTTPError` (inspect `error.response.status_code`).
 There is no automatic retry or fallback to an API key. Obtain a new token and
 call `set_access_token` before making further calls. Existing domain instances
