@@ -2,19 +2,37 @@
 
 Python client libraries for the Xena accounting system API. Provides easy access to all Xena API domains through standalone packages.
 
+## Optional OAuth refresh 0.3.0
+
+`xena-client` now supports `XenaClient(oauth=token_manager, fiscal_id=...)` for
+on-demand refresh with consumer-supplied token storage. Login helpers support
+PKCE, query and form_post callbacks, and code/hybrid response types. See the
+[OAuth integration guide](xena/xena-client/OAUTH.md).
+
+Existing API-key applications, including the wrapper, need no changes or new
+dependencies. Callback hosting, user/session association, application registration
+and storage stay with the consumer. Failed API operations are never replayed
+automatically. The wrapper's existing constructor still requires API-key
+credentials; an OAuth wrapper entry point is separate work.
+
+Live testing on 2026-09-28 confirmed Python code exchange, persistent token
+loading in a new process, automatic refresh and HTTP 200 from a read-only API
+call before and after refresh. See the [masked test result](docs/oauth-live-test-2026-09-28.json).
+Each consuming application still supplies its own callback/session and storage integration.
+
+Only `xena-client` advances to 0.3.0. Domain package versions are unchanged.
+
 ## API update 0.2.0
 
 The unified client also accepts an existing OAuth access token without requiring
 refresh support: `XenaClient(access_token=token, fiscal_id=fiscal_id)`.
 After another login, use `client.set_access_token(new_token)`. See the
 [OAuth and binary download guide](xena/xena-client/README.md#oauth-access-tokens-020).
-An experimental `XenaOAuth` helper now prepares login URLs and exchanges callback
-codes with PKCE; see the [OAuth setup guide](xena/xena-client/OAUTH.md).
-**Live Xena compatibility is unconfirmed.** Callback hosting and any refresh remain
-the application's responsibility; no refresh token is required. The current wrapper
-still requires API-key credentials; this change adds OAuth to the client itself.
+The original `XenaOAuth` helper prepares login URLs and exchanges callback codes
+with PKCE. Version 0.3.0 extends it with the opt-in refresh flow described above;
+manual bearer-token use continues to work without a refresh token.
 
-`xena-client`, `xena-order`, `xena-finance`, and `xena-subscription` are version
+This API update advanced `xena-client`, `xena-order`, `xena-finance`, and `xena-subscription` to version
 0.2.0. Other domain packages remain at 0.1.0. See [CHANGELOG.md](CHANGELOG.md)
 for the nine added operations and two optional filters.
 

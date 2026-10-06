@@ -5,6 +5,7 @@ import requests
 from pathlib import Path
 from typing import Optional
 from .auth import BearerTokenAuth
+from .token_manager import OAuthTokenAuth, OAuthTokenManager
 
 # Import all API packages
 from xena_accountant import AccountantApi
@@ -44,7 +45,8 @@ class XenaClient:
     BASE_URL = "https://my.xena.biz"
     
     def __init__(self, config_path: Optional[str] = None, api_key: Optional[str] = None, 
-                 fiscal_id: Optional[str] = None, *, access_token: Optional[str] = None) -> None:
+                 fiscal_id: Optional[str] = None, *, access_token: Optional[str] = None,
+                 oauth: Optional[OAuthTokenManager] = None) -> None:
         """
         Initialize Xena Client.
         
@@ -54,19 +56,23 @@ class XenaClient:
             fiscal_id: Fiscal ID (overrides config file)
             access_token: Existing OAuth access token, without the Bearer prefix.
                 Mutually exclusive with api_key. No automatic login or refresh.
+            oauth: Opt-in token manager for automatic refresh and application-owned
+                storage. Mutually exclusive with api_key and access_token.
         """
         # Load config if not provided via parameters
-        if config_path is not None or (access_token is None and (api_key is None or fiscal_id is None)):
+        if config_path is not None or (oauth is None and access_token is None and (api_key is None or fiscal_id is None)):
             config = self._load_config(config_path)
-            if api_key is None and access_token is None:
+            if api_key is None and access_token is None and oauth is None:
                 api_key = config.get('api_key') or None
                 access_token = config.get('access_token') or None
             if fiscal_id is None:
                 fiscal_id = config.get('fiscal_id', '')
         
-        if api_key is not None and access_token is not None:
-            raise ValueError("Provide either api_key or access_token, not both")
-        if not api_key and access_token is None:
+        if sum(value is not None for value in (api_key, access_token, oauth)) > 1:
+            raise ValueError("Provide only one of api_key, access_token or oauth")
+        if oauth is not None and not isinstance(oauth, OAuthTokenManager):
+            raise ValueError("oauth must be an OAuthTokenManager")
+        if not api_key and access_token is None and oauth is None:
             raise ValueError("API key or OAuth access token is required. Provide via parameter or config.json")
         
         self.api_key = api_key
@@ -78,7 +84,9 @@ class XenaClient:
             'Content-Type': 'application/json',
             'Accept': 'application/json'
         })
-        if access_token is not None:
+        if oauth is not None:
+            self.session.auth = OAuthTokenAuth(oauth, self.BASE_URL)
+        elif access_token is not None:
             self.set_access_token(access_token)
         else:
             self.session.headers['XenaAPIKey'] = api_key

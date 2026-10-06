@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0 — 2026-09-28
+
+- Add opt-in `XenaClient(oauth=OAuthTokenManager(...))` with on-demand refresh, application-supplied token load/save callbacks and serialized refresh/persistence. Save replacement refresh tokens before API calls; preserve an existing refresh token if the response omits one.
+- Add `XenaOAuth.refresh_tokens`, form_post callback parsing, configurable code/hybrid response types and server-side pending-login export/restore. Request consent with offline_access.
+- Add optional `OAuthConfig.callback_app_id` for a shared callback router: state becomes 64 random hex characters plus a hyphen and the app ID. Preserve full state validation and bind exported attempts to the routing ID; direct OAuth and API-key behavior stay unchanged.
+- Add `OAuthLoginRequired` and `OAuthStorageError`. Never replay API operations, automatically retry token HTTP requests or fall back to API keys. Retain a pending token update in the manager when storage fails.
+- Preserve API-key construction/configuration, manual access_token usage and generated domain APIs. No new runtime dependencies; only the unified xena-client package advances to 0.3.0.
+- Verify the Python client against live Xena on 2026-09-28: code exchange through the existing registered callback and HTTP 307 relay, persistent loading in a new process, automatic refresh with replacement refresh-token storage, and HTTP 200 from GET /Api/User/FiscalSetup before and after refresh. Local expiry was advanced for the test; long-term refresh validity is not established.
+
 ## 0.2.0 — 2026-09-09
 
 - Add experimental OAuthConfig/XenaOAuth helpers for configurable redirect URI, Authorization Code with S256 PKCE, state checking and a single-use callback exchange. Live Xena compatibility is unconfirmed. Refresh-token issuance is optional; automatic refresh remains out of scope.
